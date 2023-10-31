@@ -1,0 +1,50 @@
+#!/bin/bash
+
+# Script Name: Disable Slack updates.sh
+# Author: [Michael Cleveland]
+# Created On: [Creation Date, e.g., 2023-10-31]
+# Last Modified By: [Michael Cleveland]
+# Last Modified On: [2023-10-31]
+# Version: 1.0
+
+# Description:
+# This script modifies the Slack application's preferences for the currently logged-in user on macOS.
+# It specifically sets the 'SlackNoAutoUpdates' key to 'true', which prevents the Slack app from auto-updating.
+
+# Usage:
+# Ensure that Slack is not running or is restarted after this script runs to apply the changes.
+
+# Note:
+# This script uses PlistBuddy for editing plist files, as it ensures the file's integrity.
+# Be cautious when editing plist files and always ensure backups are made before script execution.
+
+# [Here starts the actual script code]
+
+echo "Starting the update of Slack preferences..."
+
+# Get the current logged-in user
+USER=$(stat -f %Su /dev/console)
+
+# Path to the .plist file
+plist_file="/Users/$USER/Library/Preferences/com.tinyspeck.slackmacgap.plist"
+
+# Key and value to be added/checked
+key="SlackNoAutoUpdates"
+expected_value="true"
+
+# Check if the key exists and has the expected value
+current_value=$(/usr/libexec/PlistBuddy -c "Print :$key" "$plist_file" 2>/dev/null)
+if [[ $? -eq 0 && "$current_value" == "$expected_value" ]]; then
+    echo "The key '$key' already exists with the value '$expected_value'. No changes needed."
+else
+    # Check if the key exists regardless of its value
+    if [[ $? -eq 0 ]]; then
+        echo "The key '$key' exists but with a different value. Updating it to '$expected_value'."
+        /usr/libexec/PlistBuddy -c "Set :$key $expected_value" "$plist_file"
+    else
+        echo "The key '$key' does not exist. Adding it with the value '$expected_value'."
+        /usr/libexec/PlistBuddy -c "Add :$key bool $expected_value" "$plist_file"
+    fi
+fi
+
+echo "Script execution completed."
